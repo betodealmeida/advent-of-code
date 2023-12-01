@@ -8,7 +8,7 @@
   (let loop ((start 0) (matches '()))
     (let ((match (regexp-exec regexp text start)))
       (if match
-          (loop (+ (match:start match) 1) (cons (match:substring match) matches))
+          (loop (+ (match:start match) 1) (cons match matches))
           (reverse matches)))))
 
 (define (replace-with-number str)
@@ -27,8 +27,8 @@
   (let* ((digit-regexp (make-regexp "([0-9]|one|two|three|four|five|six|seven|eight|nine)"))
         (matches (all-overlapping-matches digit-regexp str)))
     (if (not (null? matches))
-        (let ((first-digit (car matches))
-              (last-digit (car (last-pair matches))))
+        (let ((first-digit (match:substring (car matches) 0))
+              (last-digit (match:substring (car (last-pair matches)) 0)))
           (values (replace-with-number first-digit) (replace-with-number last-digit)))
         (values #f #f))))
 
