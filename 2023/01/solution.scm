@@ -4,42 +4,41 @@
 (use-modules (ice-9 rdelim))
 (use-modules (ice-9 regex))
 
-(define (find-first-and-last-digit str)
+(define (find-digits str)
   (let* ((digit-regexp (make-regexp "[0-9]"))
-         (first-match (regexp-exec digit-regexp str))
-         (first-digit (if first-match
-                          (match:substring first-match 0)
-                          #f))
-         (reversed-str (list->string (reverse (string->list str))))
-         (last-match (regexp-exec digit-regexp reversed-str))
-         (last-digit (if last-match
-                         (match:substring last-match 0)
-                         #f)))
-    (if (and first-digit last-digit)
-        (values first-digit last-digit)
-        #f)))
+        (matches (list-matches digit-regexp str)))
+    (if (not (null? matches))
+        (let ((first-digit (match:substring (car matches) 0))
+              (last-digit (match:substring (car (last-pair matches)) 0)))
+          (values first-digit last-digit))
+        (values #f #f))))
 
 (define (combine-digits first-digit last-digit)
-  (let ((combined-str (string-append first-digit last-digit)))
-    (string->number combined-str)))
+  (if (and first-digit last-digit)
+      (string->number (string-append first-digit last-digit))
+      0))
 
 (define (process-line line)
   (call-with-values
-    (lambda () (find-first-and-last-digit line))
+    (lambda () (find-digits line))
     combine-digits))
 
-(define (read-file filename process-func)
-  (let ((in-port (open-input-file filename)))
-    (let loop ((line (read-line in-port))
-               (acc 0))
-      (if (eof-object? line)
-          (begin
-            (close-input-port in-port)
-            acc)
-          (loop (read-line in-port) (+ acc (process-func line)))))))
+(define (read-file-safe filename process-func)
+  (catch 'system-error
+    (lambda ()
+      (let ((in-port (open-input-file filename)))
+        (let loop ((line (read-line in-port))
+                   (acc 0))
+          (if (eof-object? line)
+              (begin
+                (close-input-port in-port)
+                acc)
+              (loop (read-line in-port) (+ acc (process-func line)))))))
+    (lambda args
+      (format #t "Error reading file: ~A~%" args)
+      0)))
 
-
-(define total-sum (read-file "input" process-line))
+(define total-sum (read-file-safe "input" process-line))
 (display "Total sum: ")
 (display total-sum)
 (newline)
